@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bus Schedule</title>
+  <style>
+    #schedule { text-align: center; width: 400px; }
+    input { width: 120px; }
+    #info { background-color:aquamarine; border:1px solid black; margin:0.25em; }
+    .info { font-size: 1.5em; padding: 0.25em; }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+</head>
+<body>
+<div id="schedule">
+  <div id="info"><span class="info">Not Connected</span></div>
+  <div id="controls">
+    <input id="depart" value="Depart" type="button" onclick="result.depart()">
+    <input id="arrive" value="Arrive" type="button" onclick="result.arrive()" disabled="true">
+  </div>
+</div>
+<script>
+  function solve() {
+
+    let departButton = $('#depart');
+    let arriveButton = $('#arrive');
+    let infoSpanDom = $('.info');
+
+    let currStop;
+    let nextBusStop;
+    function getInitialBusData() {
+        let url = `https://judgetests.firebaseio.com/schedule/depot.json`;
+        $.ajax({
+            url,
+            method: "GET",
+            success:listBusInfo,
+            error: disableButtons
+        });
+    }
+
+    function getNextBusData(nextBusId) {
+        let url = `https://judgetests.firebaseio.com/schedule/${nextBusId}.json`;
+        $.ajax({
+            url,
+            method: "GET",
+            success:listBusInfo,
+            error: disableButtons
+        });
+    }
+
+    let isInitial = false;
+    function depart() {
+
+        if (!isInitial) {
+            getInitialBusData();
+            isInitial = true;
+        } else {
+            getNextBusData(nextBusStop);
+        }
+
+        $('#depart').attr('disabled', 'disabled');
+        $('#arrive').removeAttr('disabled');
+    }
+
+    function arrive() {
+        $('.info').text('Arriving at ' + currStop);
+        $('#depart').removeAttr('disabled');
+        $('#arrive').attr('disabled', 'disabled');
+    }
+
+    function disableButtons() {
+        $('#depart').attr('disabled', 'disabled');
+        $('#arrive').attr('disabled', 'disabled');
+    }
+
+    function listBusInfo(busStopData) {
+        currStop = busStopData['name'];
+        nextBusStop = busStopData['next'];
+        $('.info').text('Next stop ' + currStop);
+    }
+
+    return {
+        depart,
+        arrive
+    };
+}
+
+
+  let result = solve();
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Biggest Catch</title>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="catch.js"></script>
+    <style>
+        h1 { text-align: center; }
+        input { display: block; }
+        div { border: 1px solid black; padding: 5px; display: inline-table; width: 24%; }
+        div#aside { margin-top: 8px; width: 15%; border: 2px solid grey; }
+        div#catches{ width:auto; }
+        button { display: inline-table; margin: 5% 0 5% 5%; width: 39%; }
+        button.add { width: 90%; }
+        button.load { width: 90%; padding: 10px; }
+        button.load { vertical-align: top; }
+        fieldset { display: inline-table; vertical-align: top; }
+        fieldset#main { width: 70%; }
+    </style>
+</head>
+<body>
+<h1>Biggest Catches</h1>
+<fieldset id="main">
+    <legend>Catches</legend>
+    <div id="catches">
+        <div class="catch" data-id="<id-goes-here>">
+            <label>Angler</label>
+            <input type="text" class="angler" value="Paulo Amorim"/>
+            <label>Weight</label>
+            <input type="number" class="weight" value="636"/>
+            <label>Species</label>
+            <input type="text" class="species" value="Atlantic Blue Marlin"/>
+            <label>Location</label>
+            <input type="text" class="location" value="Vitória, Brazil"/>
+            <label>Bait</label>
+            <input type="text" class="bait" value="trolled pink"/>
+            <label>Capture Time</label>
+            <input type="number" class="captureTime" value="80"/>
+            <button class="update">Update</button>
+            <button class="delete">Delete</button>
+        </div>
+    </div>
+</fieldset>
+<div id="aside">
+    <button class="load">Load</button>
+    <fieldset id="addForm">
+        <legend>Add Catch</legend>
+        <label>Angler</label>
+        <input type="text" class="angler"/>
+        <label>Weight</label>
+        <input type="number" class="weight"/>
+        <label>Species</label>
+        <input type="text" class="species"/>
+        <label>Location</label>
+        <input type="text" class="location"/>
+        <label>Bait</label>
+        <input type="text" class="bait"/>
+        <label>Capture Time</label>
+        <input type="number" class="captureTime"/>
+        <button class="add">Add</button>
+    </fieldset>
+</div>
+<script>
+
+function attachEvents() {
+    const baseUrl = "https://baas.kinvey.com/appdata/kid_Bk7xwjZPb";
+    const username = "vania";
+    const password = "vania";
+
+    let angler = $('.angler');
+    let weight = $('.weight');
+    let species = $('.species');
+    let location = $('.location');
+    let bait = $('.bait');
+    let captureTime = $('.captureTime');
+
+    $('.load').click(loadAllCatches);
+    $('.add').click(addData);
+    
+    function loadAllCatches() {
+        $.ajax({
+            url: baseUrl + "/biggestCatches",
+            method: "GET",
+            headers:  {
+                "Authorization": "Basic " + btoa(username + ":" + password)
+            },
+            contentType: "application/json",
+            success: displayAllCatches,
+            error: handleError
+        })
+    };
+
+    function displayAllCatches(data) {
+        let catches = $('#catches');
+        catches.empty();
+
+        for (let element of data) {
+
+            let divMain = $('<div class="catch"}`>');
+            divMain.attr('data-id', `${element._id}`);
+            divMain.append($('<lable>Angler</lable>'));
+            divMain.append($('<input type="text" class="angler"/>').val(`${element.angler}`))
+                .append($("<label>Weight</label>"))
+                .append($(`<input type="number" class="weight"/>`).val(`${element.weight}`))
+                .append($('<label>Species</label>'))
+                .append($('<input type="text" class="species"/>').val(`${element.species}`))
+                .append($('<label>Location</label>'))
+                .append($('<input type="text" class="location"/>').val(`${element.location}`))
+                .append($('<label>Bait</label>'))
+                .append($('<input type="text" class="bait"/>').val(`${element.bait}`))
+                .append($('<label>Capture Time</label>'))
+                .append($('<input type="number" class="captureTime"/>').val(`${element.captureTime}`))
+                .append($('<button class="update">Update</button>').click(() => updateData(`${element._id}`)))
+                .append($('<button class="delete">Delete</button>').click(() => deleteFish(`${element._id}`)))
+            catches.append(divMain);
+        }
+    };
+
+    function addData() {
+        $.ajax({
+            url: baseUrl + "/biggestCatches",
+            method: "POST",
+            headers:  {
+                "Authorization": "Basic " + btoa(username + ":" + password)
+            },
+            contentType: "application/json",
+            data: JSON.stringify({
+                angler: angler.val(),
+                weight: Number(weight.val()),
+                species: species.val(),
+                location: location.val(),
+                bait: bait.val(),
+                captureTime: Number(captureTime.val())
+            }),
+            success: loadAllCatches,
+            error: handleError
+
+        });
+
+        angler.val('');
+        weight.val('');
+        species.val('');
+        location.val('');
+        bait.val('');
+        captureTime.val('');
+    };
+ 
+    function updateData(id){
+        let divS = $("div").find("[data-id='" + id + "']");
+
+        $.ajax({
+            method: "PUT",
+            url: baseUrl + "/biggestCatches/" + id,
+            headers:  {
+                "Authorization": "Basic " + btoa(username + ":" + password)
+            },
+            contentType: "application/json",
+            data: JSON.stringify({
+                angler: divS.find('.angler').val(),
+                weight: divS.find('.weight').val(),
+                species: divS.find('.species').val(),
+                location: divS.find('.location').val(),
+                bait: divS.find('.bait').val(),
+                captureTime: divS.find('.captureTime').val()
+            }),
+            success: loadAllCatches,
+            error: handleError
+        })
+    }
+
+    function deleteFish(key) {
+        $.ajax({
+            method: "DELETE",
+            url: baseUrl + "/biggestCatches/" + key,
+            headers:  {
+                "Authorization": "Basic " + btoa(username + ":" + password)
+            },
+            contentType: "application/json",
+            success: loadAllCatches,
+            error: handleError
+        })
+    }
+
+
+    function handleError(err) {
+        console.log(`ERROR: ${err.statusText}`);
+    }
+
+}
+
+</script>
+</body>
+</html>

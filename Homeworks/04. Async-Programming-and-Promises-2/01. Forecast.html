@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Forecatser</title>
+  <style>
+    #content { width: 400px; }
+    #request { text-align: center; }
+    .bl { width: 300px; }
+    #current { text-align: center; font-size: 2em; }
+    #upcoming { text-align: center; }
+    .condition { text-align: left; display: inline-block; }
+    .symbol { font-size: 4em; display: inline-block; }
+    .forecast-data { display: block; }
+    .upcoming { display: inline-block; margin: 1.5em; }
+    .label { margin-top: 1em; font-size: 1.5em; background-color: aquamarine; font-weight: 400; }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+</head>
+<body>
+<div id="content">
+  <div id="request">
+    <input id="location" class='bl' type="text">
+    <input id="submit" class="bl" type="button" value="Get Weather">
+  </div>
+  <div id="forecast" style="display:none">
+    <div id="current">
+      <div class="label">Current conditions</div>
+    </div>
+    <div id="upcoming">
+      <div class="label">Three-day forecast</div>
+    </div>
+  </div>
+</div>
+<script src="forecaster.js"></script>
+<script>
+ function attachEvents() {
+    let baseUrl = "https://judgetests.firebaseio.com";
+    $('#submit').click(loadForecast);
+
+    let weatherSymbols = {
+        'Sunny': '&#x2600',
+        'Partly sunny': '&#x26C5',
+        'Overcast': '&#x2601',
+        'Rain': '&#x2614',
+    };
+
+    function request(endpoint) {
+        return $.ajax({
+            method: "GET",
+            url: baseUrl + endpoint
+        });
+    };
+
+    function loadForecast() {
+        request('/locations.json')
+            .then(displayLocations)
+            .catch(handleError);
+
+    };
+
+    function displayLocations(dataArr) {
+        let inputLocation = $('#location').val();
+        let code = dataArr.filter(loc => loc['name'] === inputLocation)
+            .map(loc => loc['code'])[0];
+
+        if (!code) {
+            handleError()
+        }
+
+        let todayForecastP = request(`/forecast/today/${code}.json`);
+        let upcomingForecastP = request(`/forecast/upcoming/${code}.json `)
+        Promise.all([todayForecastP, upcomingForecastP])
+            .then(displayAllForecasts)
+            .catch(handleError);
+    };
+
+    function displayAllForecasts([todayWeather, upcomingWeather]) {
+        let forecast = $('#forecast');
+        forecast.css('display', 'block');
+
+        displayToCurrent(todayWeather, weatherSymbols);
+        displayToUpcoming(upcomingWeather);
+    }
+
+    function displayToCurrent(todayWeather, weatherSymbols) {
+        let current = $('#current');
+        current.empty();
+        current
+            .append($('<div class="label">Current conditions</div>'))
+            .append($(`<span class="condition symbol">${weatherSymbols[todayWeather['forecast']['condition']]}</span>`))
+            .append($('<span class="condition"></span>')
+                .append($(`<span class="forecast-data">${todayWeather.name}</span>`))
+                .append($(`<span class="forecast-data">${todayWeather.forecast.low}&#176 / ${todayWeather.forecast.high}&#176</span>`))
+                .append($(`<span class="forecast-data">${todayWeather.forecast.condition}</span>`)))
+    };
+
+    function displayToUpcoming(upcomingWeather) {
+        let upcoming = $('#upcoming');
+        upcoming.empty();
+        upcoming.append($('<div class="label">Tree-day forecast</div>'));
+
+        let data = upcomingWeather['forecast'];
+        for (let info of data) {
+            upcoming
+                .append($('<span class="upcoming">')
+                    .append($(`<span class="symbol">${weatherSymbols[info['condition']]}</span>`))
+                    .append($(`<span class="forecast-data">${info['low']}&#176; / ${info['high']}&#176;</span>`))
+                    .append($(`<span class="forecast-data">${info['condition']}</span>`)))
+        }
+
+    }
+    
+    function handleError(err) {
+        $('#forecast').css('display', 'block').text("Error")
+    }
+    
+}
+
+</script>
+</body>
+</html>
