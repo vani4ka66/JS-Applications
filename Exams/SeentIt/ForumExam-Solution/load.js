@@ -495,9 +495,6 @@ function myApp() {
         //alert(errorMsg);
         showError(errorMsg);
     };
-
-
-
 }
 
 //})()
